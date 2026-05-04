@@ -1,0 +1,6 @@
+{
+  "name": "Sacred Vision",
+  "description": "An AI pipeline that transcribes audio narratives and generates artistic image prompts for visual storytelling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
