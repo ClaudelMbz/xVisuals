@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Matches any document in the folders collection
+    match /folders/{folderId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Matches any document in the secure_files collection
+    match /secure_files/{fileId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Matches physical binary data in the secure_file_payloads collection
+    match /secure_file_payloads/{payloadId} {
+      allow read, delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/secure_files/$(payloadId)) &&
+        get(/databases/$(database)/documents/secure_files/$(payloadId)).data.userId == request.auth.uid;
+      
+      allow create, update: if request.auth != null && 
+        exists(/databases/$(database)/documents/secure_files/$(payloadId)) &&
+        get(/databases/$(database)/documents/secure_files/$(payloadId)).data.userId == request.auth.uid;
+    }
+    
+    // Matches any document in the saved_reconciliations collection
+    match /saved_reconciliations/{reconcId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Matches any document in the private_notes collection (legacy)
+    match /private_notes/{noteId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Matches any document in the users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

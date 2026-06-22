@@ -1,0 +1,69 @@
+{
+  "collections": {
+    "users": {
+      "schema": {
+        "userId": "string",
+        "email": "string",
+        "displayName": "string",
+        "photoURL": "string",
+        "createdAt": "timestamp"
+      },
+      "indexes": []
+    },
+    "folders": {
+      "schema": {
+        "id": "string",
+        "userId": "string",
+        "name": "string",
+        "createdAt": "timestamp"
+      },
+      "indexes": [
+        {
+          "fields": {
+            "userId": "ASCENDING",
+            "createdAt": "DESCENDING"
+          }
+        }
+      ]
+    },
+    "secure_files": {
+      "schema": {
+        "id": "string",
+        "userId": "string",
+        "folderId": "string",
+        "name": "string",
+        "fileName": "string",
+        "fileType": "string",
+        "fileSize": "number",
+        "fileData": "string",
+        "createdAt": "timestamp"
+      },
+      "indexes": [
+        {
+          "fields": {
+            "userId": "ASCENDING",
+            "createdAt": "DESCENDING"
+          }
+        }
+      ]
+    },
+    "saved_reconciliations": {
+      "schema": {
+        "id": "string",
+        "userId": "string",
+        "name": "string",
+        "rawInput": "string",
+        "results": "array",
+        "createdAt": "timestamp"
+      },
+      "indexes": [
+        {
+          "fields": {
+            "userId": "ASCENDING",
+            "createdAt": "DESCENDING"
+          }
+        }
+      ]
+    }
+  }
+}

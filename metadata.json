@@ -1,6 +1,8 @@
 {
-  "name": "Sacred Vision",
-  "description": "An AI pipeline that transcribes audio narratives and generates artistic image prompts for visual storytelling.",
+  "name": "CoreNode Hub",
+  "description": "Ecosystème numérique personnel de Claudel Mubenzem - Étudiant Ingénieur à l'ECE Lyon spécialisé en Data, Systèmes d'information et ERP.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
