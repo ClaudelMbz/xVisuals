@@ -40,6 +40,7 @@ export default function App() {
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [restoredReconciliationInput, setRestoredReconciliationInput] = useState<string | undefined>(undefined);
 
   // Monitor auth state changes on mount
@@ -52,11 +53,20 @@ export default function App() {
   }, []);
 
   const handleLogin = async () => {
+    setAuthError(null);
     try {
       await signInWithGoogle();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google sign in error", error);
-      alert("La connexion Google a rencontré un problème. Si la fenêtre popup est bloquée par votre navigateur, veuillez ouvrir l'application dans un nouvel onglet.");
+      if (error && (error.code === 'auth/popup-closed-by-user' || error.message?.includes('popup-closed-by-user'))) {
+        setAuthError(
+          "La fenêtre de connexion a été fermée ou bloquée par votre navigateur.\n\n" +
+          "⚠️ TRÈS IMPORTANT : Les navigateurs bloquent la connexion Google dans les cadres d'aperçu (iFrames). " +
+          "Veuillez CLIQUER SUR LE BOUTON BLEU CI-DESSOUS pour ouvrir l'application dans un nouvel onglet, puis reconnectez-vous."
+        );
+      } else {
+        setAuthError(`Une erreur s'est produite lors de la connexion Google: ${error.message || error}`);
+      }
     }
   };
 
@@ -168,14 +178,31 @@ export default function App() {
               Se connecter via Google
             </button>
 
+            {authError && (
+              <div className="mt-4 p-4 bg-rose-500/5 border border-rose-500/20 rounded-2xl text-rose-400 text-[11px] text-left leading-relaxed font-sans space-y-1">
+                <p className="font-semibold text-rose-300">⚠️ Échec d'authentification</p>
+                <p className="whitespace-pre-line">{authError}</p>
+              </div>
+            )}
+
             {/* Disclaimer on iframe limitations */}
-            <div className="mt-8 border-t border-slate-800/80 pt-6">
+            <div className="mt-8 border-t border-slate-800/80 pt-6 space-y-4">
               <p className="text-[11px] text-amber-500 leading-relaxed flex items-start gap-2 text-left bg-amber-500/5 p-3.5 rounded-xl border border-amber-500/10">
                 <span className="text-sm leading-none block shrink-0">⚠️</span>
                 <span>
-                  <strong>Alerte iFrame :</strong> Si la fenêtre popup de Google ne s'affiche pas (cookie tiers bloqué dans l'aperçu), cliquez sur <strong>"Ouvrir dans un nouvel onglet"</strong> en haut à droite pour accéder librement au service.
+                  <strong>Alerte iFrame :</strong> Si la fenêtre de connexion Google ne s'affiche pas (bloquée par l'aperçu de l'iFrame), utilisez le bouton ci-dessous pour lancer l'application en plein écran.
                 </span>
               </p>
+
+              <a
+                href={window.location.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs tracking-wide rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-500/20 active:scale-[0.98] focus:outline-none"
+              >
+                Ouvrir l'application dans un nouvel onglet
+                <ArrowUpRight size={14} />
+              </a>
             </div>
           </motion.div>
         </main>
