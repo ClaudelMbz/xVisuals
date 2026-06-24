@@ -47,13 +47,13 @@
         }
       ]
     },
-    "saved_reconciliations": {
+    "secure_passwords": {
       "schema": {
         "id": "string",
         "userId": "string",
-        "name": "string",
-        "rawInput": "string",
-        "results": "array",
+        "title": "string",
+        "password": "string",
+        "notes": "string",
         "createdAt": "timestamp"
       },
       "indexes": [
@@ -61,6 +61,44 @@
           "fields": {
             "userId": "ASCENDING",
             "createdAt": "DESCENDING"
+          }
+        }
+      ]
+    },
+    "integrated_projects": {
+      "schema": {
+        "id": "string",
+        "userId": "string",
+        "title": "string",
+        "url": "string",
+        "description": "string",
+        "createdAt": "timestamp"
+      },
+      "indexes": [
+        {
+          "fields": {
+            "userId": "ASCENDING",
+            "createdAt": "DESCENDING"
+          }
+        }
+      ]
+    },
+    "kpi_days": {
+      "schema": {
+        "id": "string",
+        "userId": "string",
+        "dateStr": "string",
+        "targetKpi": "number",
+        "actualKpi": "number",
+        "expense": "number",
+        "tasks": "array",
+        "createdAt": "timestamp"
+      },
+      "indexes": [
+        {
+          "fields": {
+            "userId": "ASCENDING",
+            "dateStr": "DESCENDING"
           }
         }
       ]
