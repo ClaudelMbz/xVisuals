@@ -23,12 +23,21 @@ import {
   FileCheck2,
   Lock,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Globe,
+  Plus,
+  Trash2,
+  ExternalLink,
+  RefreshCw,
+  PlayCircle,
+  Loader2
 } from 'lucide-react';
 import { projectsData, articlesData, academicJourney, professionalExperience } from './data/portfolioData';
-import EanReconciler from './components/EanReconciler';
 import SecureWorkspace from './components/SecureWorkspace';
-import { auth, signInWithGoogle, logOut, onAuthStateChanged, User } from './lib/firebase';
+import DailyView from './components/DailyView';
+import Dashboard from './components/Dashboard';
+import { auth, signInWithGoogle, logOut, onAuthStateChanged, User, db } from './lib/firebase';
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 type TabType = 'home' | 'projects' | 'veille' | 'about' | 'secure' | 'contact';
 
@@ -36,12 +45,154 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState<'all' | 'automation' | 'erp' | 'ia'>('all');
+
+  // KPIMaster navigation and calendar states
+  const [currentKpiDate, setCurrentKpiDate] = useState<string>(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+  const [kpiTab, setKpiTab] = useState<'daily' | 'dashboard'>('daily');
   
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [restoredReconciliationInput, setRestoredReconciliationInput] = useState<string | undefined>(undefined);
+
+  // Integrated projects orchestrator states
+  interface IntegratedProject {
+    id: string;
+    userId?: string;
+    title: string;
+    url: string;
+    description: string;
+    createdAt?: any;
+  }
+
+  const defaultProjects: IntegratedProject[] = [
+    {
+      id: 'demo-kpi',
+      title: 'KPI Dashboard',
+      url: 'https://claudelmbz.github.io/kpi/',
+      description: 'Module d\'analyse de KPIs industriels et de pilotage de production'
+    }
+  ];
+
+  const [integratedProjects, setIntegratedProjects] = useState<IntegratedProject[]>(defaultProjects);
+  const [activeIframeProject, setActiveIframeProject] = useState<IntegratedProject | null>(null);
+  const [newProjectTitle, setNewProjectTitle] = useState('');
+  const [newProjectUrl, setNewProjectUrl] = useState('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [isSavingProject, setIsSavingProject] = useState(false);
+  const [projectError, setProjectError] = useState('');
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+  const fetchIntegratedProjects = async () => {
+    if (!user) {
+      setIntegratedProjects(defaultProjects);
+      return;
+    }
+    setLoadingProjects(true);
+    setProjectError('');
+    try {
+      const q = query(
+        collection(db, 'integrated_projects'),
+        where('userId', '==', user.uid)
+      );
+      const querySnapshot = await getDocs(q);
+      const fetched: IntegratedProject[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        fetched.push({
+          id: docSnap.id,
+          userId: data.userId,
+          title: data.title || 'Sans titre',
+          url: data.url || '',
+          description: data.description || '',
+          createdAt: data.createdAt?.toDate() || new Date()
+        });
+      });
+      
+      // Sort client-side by createdAt descending
+      fetched.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+        const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+        return dateB - dateA;
+      });
+
+      setIntegratedProjects([...defaultProjects, ...fetched]);
+    } catch (err: any) {
+      console.error('Error fetching integrated projects:', err);
+      setProjectError('Impossible de charger vos projets intégrés.');
+      setIntegratedProjects(defaultProjects);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjectTitle.trim() || !newProjectUrl.trim()) return;
+
+    if (!user) {
+      setProjectError('Veuillez vous connecter avec Google pour enregistrer vos propres projets intégrés.');
+      return;
+    }
+
+    setProjectError('');
+    setIsSavingProject(true);
+
+    let sanitizedUrl = newProjectUrl.trim();
+    if (!/^https?:\/\//i.test(sanitizedUrl)) {
+      sanitizedUrl = 'https://' + sanitizedUrl;
+    }
+
+    try {
+      await addDoc(collection(db, 'integrated_projects'), {
+        userId: user.uid,
+        title: newProjectTitle.trim(),
+        url: sanitizedUrl,
+        description: newProjectDesc.trim(),
+        createdAt: serverTimestamp()
+      });
+
+      setNewProjectTitle('');
+      setNewProjectUrl('');
+      setNewProjectDesc('');
+      await fetchIntegratedProjects();
+    } catch (err: any) {
+      console.error('Error saving integrated project:', err);
+      setProjectError("Une erreur est survenue lors de l'enregistrement de l'accès.");
+    } finally {
+      setIsSavingProject(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (projectId === 'demo-kpi') {
+      alert("Le projet de démonstration par défaut ne peut être supprimé.");
+      return;
+    }
+    if (!window.confirm('Voulez-vous vraiment détruire ce projet de votre orchestrateur ?')) return;
+
+    try {
+      await deleteDoc(doc(db, 'integrated_projects', projectId));
+      if (activeIframeProject?.id === projectId) {
+        setActiveIframeProject(null);
+      }
+      await fetchIntegratedProjects();
+    } catch (err: any) {
+      console.error('Error deleting integrated project:', err);
+      alert('Erreur lors de la suppression.');
+    }
+  };
+
+  // Sync integrated projects when user login/logout
+  useEffect(() => {
+    fetchIntegratedProjects();
+  }, [user]);
 
   // Monitor auth state changes on mount
   useEffect(() => {
@@ -253,7 +404,7 @@ export default function App() {
                 `}
               >
                 {tab === 'home' && 'Accueil'}
-                {tab === 'projects' && 'Projets & Diagnostics'}
+                {tab === 'projects' && 'KPIMaster'}
                 {tab === 'veille' && 'Veille & TechWatch'}
                 {tab === 'about' && 'À Propos & CV'}
                 {tab === 'secure' && (
@@ -310,7 +461,7 @@ export default function App() {
                 >
                   <span>
                     {tab === 'home' && 'Accueil'}
-                    {tab === 'projects' && 'Projets & Diagnostics'}
+                    {tab === 'projects' && 'KPIMaster'}
                     {tab === 'veille' && 'Veille & TechWatch'}
                     {tab === 'about' && 'À Propos & CV'}
                     {tab === 'secure' && 'Espace Sécurisé'}
@@ -511,123 +662,58 @@ export default function App() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="space-y-12"
+              className="space-y-8"
             >
+              {/* Header */}
               <div className="border-b border-slate-100 pb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
                 <div>
-                  <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Projets & Diagnostics</h1>
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-slate-400 mt-1">Expérimentations de code et paramétrage fonctionnel</p>
+                  <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">KPIMaster 🚀</h1>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-slate-400 mt-1">Tracker de KPI Journalier &amp; Système de Scoring Pondéré</p>
                 </div>
 
-                {/* Filter buttons */}
-                <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl self-start md:self-center">
-                  {[
-                    { id: 'all', label: 'Tous' },
-                    { id: 'automation', label: 'Data & Automatisation' },
-                    { id: 'erp', label: 'ERP & Industrie' },
-                    { id: 'ia', label: 'IA' }
-                  ].map((btn) => (
-                    <button
-                      key={btn.id}
-                      onClick={() => setProjectFilter(btn.id as any)}
-                      className={`px-3 py-1.5 rounded-lg font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer
-                        ${projectFilter === btn.id 
-                          ? 'bg-white text-slate-900 shadow-sm' 
-                          : 'text-slate-500 hover:text-slate-700'
-                        }
-                      `}
-                    >
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Projects Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                {/* Visualizer & descriptions */}
-                <div className="lg:col-span-8 space-y-8">
-                  {filteredProjects.map((p) => (
-                    <div key={p.id} className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-xl hover:shadow-slate-100 transition-all duration-300 relative">
-                      
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 border-b border-slate-50 pb-5">
-                        <div>
-                          <span className="font-mono text-[9px] uppercase font-bold text-blue-600 tracking-wider block mb-1">
-                            CODE_CASE // {p.id.toUpperCase()}
-                          </span>
-                          <h2 className="text-xl font-bold text-slate-900">{p.title}</h2>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {p.technologies.map(tech => (
-                            <span key={tech} className="font-mono text-[9px] bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100 text-slate-600 font-semibold uppercase">
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-sans mb-6">
-                        {p.fullDesc}
-                      </p>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
-                        <div>
-                          <span className="font-mono text-[9px] uppercase tracking-wider text-slate-400 block mb-3 font-bold">Impacts & Rendements</span>
-                          <ul className="space-y-2">
-                            {p.metrics.map((metric, idx) => (
-                              <li key={idx} className="text-xs text-slate-700 flex items-start gap-2">
-                                <span className="text-emerald-500 text-sm font-bold leading-none shrink-0">✓</span> <span>{metric}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <span className="font-mono text-[9px] uppercase tracking-wider text-slate-400 block mb-3 font-bold">Retour d'expérience</span>
-                          <p className="text-xs text-slate-600 leading-relaxed font-sans italic border-l-2 border-indigo-400 pl-3">
-                            "{p.lessonsLearned}"
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {filteredProjects.length === 0 && (
-                    <div className="text-center py-12 rounded-2xl border border-dashed border-slate-200 text-slate-400 italic">
-                      Aucune mission dans cette catégorie de filtrage.
-                    </div>
-                  )}
-                </div>
-
-                {/* Sidebar details */}
-                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-28">
-                  <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-950 mb-3">Audit de Données</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-6 font-sans">
-                      Les processus industriels et supply chain souffrent souvent d'identifiants EAN défectueux ou de bases mal interconnectées. Les modules d'automatisation permettent d'économiser de précieuses heures chaque semaine.
-                    </p>
-                    <button 
-                      onClick={() => setActiveTab('contact')}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
-                    >
-                      Discuter d'une opportunité
-                    </button>
-                  </div>
+                {/* Internal View Switches */}
+                <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl self-start">
+                  <button
+                    onClick={() => setKpiTab('daily')}
+                    className={`px-4 py-2 rounded-lg font-mono text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer ${
+                      kpiTab === 'daily'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Saisie Journalière ✍️
+                  </button>
+                  <button
+                    onClick={() => setKpiTab('dashboard')}
+                    className={`px-4 py-2 rounded-lg font-mono text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer ${
+                      kpiTab === 'dashboard'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Analyses Historiques 📊
+                  </button>
                 </div>
               </div>
 
-              {/* LIVE PLAYGROUND INTERACTIVE COMPONENT */}
-              {(projectFilter === 'all' || projectFilter === 'automation') && (
-                <div className="border-t border-slate-100 pt-12">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Outil de Simulation : Rapprochement EAN</h2>
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-slate-400 mt-1">
-                      Une mise en situation réelle d'un script Pandas d'alignement de nomenclatures fournisseurs
-                    </p>
-                  </div>
-                  <EanReconciler userId={user?.uid} initialInput={restoredReconciliationInput} />
-                </div>
-              )}
+              {/* Dynamic View container */}
+              <div className="transition-all duration-300">
+                {kpiTab === 'daily' ? (
+                  <DailyView 
+                    user={user} 
+                    currentDateStr={currentKpiDate} 
+                    onDateChange={setCurrentKpiDate} 
+                  />
+                ) : (
+                  <Dashboard 
+                    user={user} 
+                    onSelectDate={(date) => { 
+                      setCurrentKpiDate(date); 
+                      setKpiTab('daily'); 
+                    }} 
+                  />
+                )}
+              </div>
             </motion.div>
           )}
 
@@ -862,10 +948,6 @@ export default function App() {
               <SecureWorkspace 
                 userId={user.uid} 
                 userEmail={user.email || ''} 
-                onLoadSavedReconciliation={(rawInput) => {
-                  setRestoredReconciliationInput(rawInput);
-                  setActiveTab('projects');
-                }}
               />
             </motion.div>
           )}
