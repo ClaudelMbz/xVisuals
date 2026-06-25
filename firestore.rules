@@ -37,21 +37,48 @@ service cloud.firestore {
     
     // Matches any document in the secure_passwords collection
     match /secure_passwords/{passwordId} {
-      allow read: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow get: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource.data.userId == request.auth.uid);
       allow delete: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || (resource != null && resource.data.userId == request.auth.uid));
       allow create, update: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || request.resource.data.userId == request.auth.uid);
     }
 
     // Matches any document in the integrated_projects collection
     match /integrated_projects/{projectId} {
-      allow read: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow get: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource.data.userId == request.auth.uid);
       allow delete: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || (resource != null && resource.data.userId == request.auth.uid));
       allow create, update: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || request.resource.data.userId == request.auth.uid);
     }
 
     // Matches any document in the kpi_days collection
     match /kpi_days/{dayId} {
-      allow read: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow get: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource.data.userId == request.auth.uid);
+      allow delete: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || (resource != null && resource.data.userId == request.auth.uid));
+      allow create, update: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || request.resource.data.userId == request.auth.uid);
+    }
+
+    // Matches any document in the finance_accounts collection
+    match /finance_accounts/{accId} {
+      allow get: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource.data.userId == request.auth.uid);
+      allow delete: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || (resource != null && resource.data.userId == request.auth.uid));
+      allow create, update: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || request.resource.data.userId == request.auth.uid);
+    }
+
+    // Matches any document in the finance_budget collection
+    match /finance_budget/{budId} {
+      allow get: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource.data.userId == request.auth.uid);
+      allow delete: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || (resource != null && resource.data.userId == request.auth.uid));
+      allow create, update: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || request.resource.data.userId == request.auth.uid);
+    }
+
+    // Matches any document in the finance_snapshots collection
+    match /finance_snapshots/{snapId} {
+      allow get: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource == null || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || resource.data.userId == request.auth.uid);
       allow delete: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || (resource != null && resource.data.userId == request.auth.uid));
       allow create, update: if request.auth != null && (request.auth.uid == "anonymous_or_context_fallback" || request.resource.data.userId == request.auth.uid);
     }
