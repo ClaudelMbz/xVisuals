@@ -36,6 +36,7 @@ import { projectsData, articlesData, academicJourney, professionalExperience } f
 import SecureWorkspace from './components/SecureWorkspace';
 import DailyView from './components/DailyView';
 import Dashboard from './components/Dashboard';
+import FinanceHub from './components/FinanceHub';
 import { auth, signInWithGoogle, logOut, onAuthStateChanged, User, db } from './lib/firebase';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 
@@ -54,7 +55,7 @@ export default function App() {
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   });
-  const [kpiTab, setKpiTab] = useState<'daily' | 'dashboard'>('daily');
+  const [kpiTab, setKpiTab] = useState<'daily' | 'dashboard' | 'finances'>('daily');
   
   // Auth state
   const [user, setUser] = useState<User | null>(null);
@@ -672,7 +673,7 @@ export default function App() {
                 </div>
 
                 {/* Internal View Switches */}
-                <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl self-start">
+                <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl self-start">
                   <button
                     onClick={() => setKpiTab('daily')}
                     className={`px-4 py-2 rounded-lg font-mono text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer ${
@@ -693,24 +694,40 @@ export default function App() {
                   >
                     Analyses Historiques 📊
                   </button>
+                  <button
+                    onClick={() => setKpiTab('finances')}
+                    className={`px-4 py-2 rounded-lg font-mono text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer ${
+                      kpiTab === 'finances'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Portefeuille &amp; Budget 💰
+                  </button>
                 </div>
               </div>
 
               {/* Dynamic View container */}
               <div className="transition-all duration-300">
-                {kpiTab === 'daily' ? (
+                {kpiTab === 'daily' && (
                   <DailyView 
                     user={user} 
                     currentDateStr={currentKpiDate} 
                     onDateChange={setCurrentKpiDate} 
                   />
-                ) : (
+                )}
+                {kpiTab === 'dashboard' && (
                   <Dashboard 
                     user={user} 
                     onSelectDate={(date) => { 
                       setCurrentKpiDate(date); 
                       setKpiTab('daily'); 
                     }} 
+                  />
+                )}
+                {kpiTab === 'finances' && (
+                  <FinanceHub 
+                    user={user} 
                   />
                 )}
               </div>
