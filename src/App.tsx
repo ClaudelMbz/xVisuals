@@ -71,7 +71,6 @@ export default function App() {
     description: string;
     createdAt?: any;
   }
-
   const defaultProjects: IntegratedProject[] = [
     {
       id: 'demo-kpi',
