@@ -37,10 +37,11 @@ import SecureWorkspace from './components/SecureWorkspace';
 import DailyView from './components/DailyView';
 import Dashboard from './components/Dashboard';
 import FinanceHub from './components/FinanceHub';
+import TechTab from './components/TechTab';
 import { auth, signInWithGoogle, logOut, onAuthStateChanged, User, db } from './lib/firebase';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 
-type TabType = 'home' | 'projects' | 'veille' | 'about' | 'secure' | 'contact';
+type TabType = 'home' | 'projects' | 'veille' | 'tech' | 'about' | 'secure' | 'contact';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -71,6 +72,7 @@ export default function App() {
     description: string;
     createdAt?: any;
   }
+
   const defaultProjects: IntegratedProject[] = [
     {
       id: 'demo-kpi',
@@ -392,7 +394,7 @@ export default function App() {
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-1.5">
-            {(['home', 'projects', 'veille', 'about', 'secure', 'contact'] as TabType[]).map((tab) => (
+            {(['home', 'projects', 'veille', 'tech', 'about', 'secure', 'contact'] as TabType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -406,6 +408,7 @@ export default function App() {
                 {tab === 'home' && 'Accueil'}
                 {tab === 'projects' && 'KPIMaster'}
                 {tab === 'veille' && 'Veille & TechWatch'}
+                {tab === 'tech' && 'Tech'}
                 {tab === 'about' && 'À Propos & CV'}
                 {tab === 'secure' && (
                   <span className="flex items-center gap-1">
@@ -445,7 +448,7 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-full left-0 w-full bg-white border-b border-slate-200 md:hidden p-6 space-y-2 z-50 shadow-xl"
             >
-              {(['home', 'projects', 'veille', 'about', 'secure', 'contact'] as TabType[]).map((tab) => (
+              {(['home', 'projects', 'veille', 'tech', 'about', 'secure', 'contact'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => {
@@ -463,6 +466,7 @@ export default function App() {
                     {tab === 'home' && 'Accueil'}
                     {tab === 'projects' && 'KPIMaster'}
                     {tab === 'veille' && 'Veille & TechWatch'}
+                    {tab === 'tech' && 'Tech'}
                     {tab === 'about' && 'À Propos & CV'}
                     {tab === 'secure' && 'Espace Sécurisé'}
                     {tab === 'contact' && 'Contact'}
@@ -949,6 +953,19 @@ export default function App() {
                 </div>
 
               </div>
+            </motion.div>
+          )}
+
+          {/* TECH TAB */}
+          {activeTab === 'tech' && (
+            <motion.div
+              key="tech"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="space-y-12"
+            >
+              <TechTab />
             </motion.div>
           )}
 
